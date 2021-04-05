@@ -47,44 +47,17 @@ module Uart(input clk, output tx, input [7:0] data, input trig, output baud, out
 
 endmodule
 
-module Debounce(input clk, output reg out, input button);
-
-   localparam WIDTH = 20; // 2**20 / 12e6 s ~= 87ms
-
-   reg [WIDTH-1:0] counter     = 0;
-   reg             prev_button = 1;
-
-   always @(posedge clk) begin
-      if(button != prev_button && (counter == 0)) begin
-         // button toggled and counter has reached 0
-         counter <= ~0;
-         if(!button) out <= 1; // button was actually depressed
-         else out <= 0;
-
-      end
-      else begin
-
-         counter <= (counter==0) ? 0 : (counter - 1); // decrement counter
-         out <= 0;
-      end
-
-      prev_button <= button;
-   end
-
-endmodule
 
 module Top(input CLK, output LED, output PIN_17, output PIN_16, input PIN_15,
            input PIN_6, input PIN_7, input PIN_8, input PIN_9,
            input PIN_10, input PIN_11, input PIN_12, input PIN_13);
 
    wire [7:0]    data = {PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13};
-   wire          button = PIN_15;
-   wire          btrig;
+   wire          btrig = PIN_15;
    wire          baud;
    wire          busy;
    wire          tx;
 
-   Debounce U1(.clk(CLK), .out(btrig), .button(button));
    Uart     U3(.clk(CLK), .tx(tx), .data(data), .trig(btrig), .baud(baud), .busy(busy));
 
    assign LED = busy;
