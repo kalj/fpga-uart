@@ -1,67 +1,44 @@
 `default_nettype none
 
-module BaudGen(input clk, input nreset, output baud);
+module single_port_sync_ram
+  ( 	input 		clk,
+        input [1:0] addr,
+        inout [3:0] data,
+        input       we,
+        input       oe
+        );
 
-   // define a 24-bit counter to divide the clock down from 12MHz
-   localparam WIDTH = 24;
-   localparam DIVISOR = 1667; // -> 9600 Hz
-   reg [WIDTH-1:0] counter;
+   reg [3:0]        tmp_data;
+   reg [3:0]        mem [4];
 
-   // run counter from 12MHz clock
-   always @(posedge clk)
-     begin
-        counter <= counter + 1;
-        if (!nreset || (counter >= (DIVISOR-1))) counter <= 0;
-     end
-
-   assign baud = counter==0;
-
-endmodule
-
-module Uart(input clk, output tx, input [7:0] data, input trig, output baud, output busy);
-
-   wire baud_nreset = !trig;
-
-   BaudGen U1(.clk(clk), .nreset(baud_nreset), .baud(baud));
-
-   localparam REGWIDTH = 12;
-
-   reg [3:0] busy_counter = 0;
-
-   reg [(REGWIDTH-1):0] temp;
-
-   always @(posedge clk) begin
-
-      if(trig && !busy) begin
-         busy_counter <= REGWIDTH;
-         temp <= { 2'b11, data, 2'b01};
-      end
-      else if(baud) begin
-         temp <= { 1'b1, temp[(REGWIDTH-1):1] };
-         busy_counter <= (busy_counter>0)?(busy_counter-1): 0;
-      end
+   initial begin
+      mem[0] = 'h1;
+      mem[1] = 'h2;
+      mem[2] = 'h3;
+      mem[3] = 'h4;
    end
 
-   assign busy = busy_counter != 0;
-   assign tx = temp[0];
+   always @ (posedge clk) begin
+      if (!oe & we)
+        mem[addr] <= data;
+   end
 
+   always @ (posedge clk) begin
+      if (oe & !we)
+        tmp_data <= mem[addr];
+   end
+
+   assign data = (oe & !we) ? tmp_data : 4'bz;
 endmodule
 
+module Top(input CLK,
+           // addr0, addr1, we, oe
+           input PIN_14, input PIN_15, input PIN_16, input PIN_17,
+           // data bus
+           inout PIN_10, inout PIN_11, inout PIN_12, inout PIN_13);
 
-module Top(input CLK, output LED, output PIN_17, output PIN_16, input PIN_15,
-           input PIN_6, input PIN_7, input PIN_8, input PIN_9,
-           input PIN_10, input PIN_11, input PIN_12, input PIN_13);
-
-   wire [7:0]    data = {PIN_6, PIN_7, PIN_8, PIN_9, PIN_10, PIN_11, PIN_12, PIN_13};
-   wire          btrig = PIN_15;
-   wire          baud;
-   wire          busy;
-   wire          tx;
-
-   Uart     U3(.clk(CLK), .tx(tx), .data(data), .trig(btrig), .baud(baud), .busy(busy));
-
-   assign LED = busy;
-   assign PIN_16 = busy;
-   assign PIN_17 = tx;
+   wire [3:0]    data_bus = {PIN_13, PIN_12, PIN_11, PIN_10};
+   wire [1:0]    addr = {PIN_15, PIN_14};
+   single_port_sync_ram  U1(.clk(CLK), .addr(addr), .data(data_bus), .we(PIN_16), .oe(PIN_17));
 
 endmodule
