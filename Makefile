@@ -33,7 +33,6 @@ all: $(PROJ).bin
 	yosys -p 'synth_ice40 -json $@' $<
 
 %.asc: %.json $(PIN_DEF)
-	# arachne-pnr -d 8k -P cm81 -o $@ -p $^
 	nextpnr-ice40 --$(DEVICE) --package $(PACKAGE) --json $< --pcf $(PIN_DEF) --asc $@ --ignore-loops
 
 %.bin: %.asc
@@ -72,7 +71,7 @@ sudo-iceprog: $(PROJ).bin
 	sudo iceprog $<
 
 clean:
-	rm -f $(PROJ).blif $(PROJ).asc $(PROJ).rpt $(PROJ).bin
+	rm -f $(PROJ).blif $(PROJ).asc $(PROJ).rpt $(PROJ).bin $(PROJ).json
 
 .SECONDARY:
 .PHONY: all sudo-tinyprog tinyprog sudo-iceprog iceprog clean
