@@ -3,21 +3,53 @@
 `include "edge_trig.v"
 
 module BaudGenInternal(input clk, output baud);
-   // define a 24-bit counter to divide the clock down from 16MHz
-   localparam WIDTH = 24;
-   localparam DIVISOR = 1667; // -> 9600 Hz
-   reg [WIDTH-1:0] counter;
-   reg             baud;
 
-   // run counter from 16MHz clock
-   always @(posedge clk) begin
+   wire intermediate;
+
+   SB_PLL40_CORE usb_pll_inst (
+                               .REFERENCECLK(clk),
+                               .PLLOUTCORE(intermediate),
+                               .RESETB(1),
+                               .BYPASS(0)
+                               );
+
+   defparam usb_pll_inst.DIVR = 0;
+   defparam usb_pll_inst.DIVF = 9-1;  // 9-1
+   defparam usb_pll_inst.DIVQ = 1;  // 1, 0
+   defparam usb_pll_inst.FILTER_RANGE = 3'b001;
+   defparam usb_pll_inst.FEEDBACK_PATH = "SIMPLE";
+   defparam usb_pll_inst.DELAY_ADJUSTMENT_MODE_FEEDBACK = "FIXED";
+   defparam usb_pll_inst.FDA_FEEDBACK = 4'b0000;
+   defparam usb_pll_inst.DELAY_ADJUSTMENT_MODE_RELATIVE = "FIXED";
+   defparam usb_pll_inst.FDA_RELATIVE = 4'b0000;
+   defparam usb_pll_inst.SHIFTREG_DIV_MODE = 2'b00;
+   defparam usb_pll_inst.PLLOUT_SELECT = "GENCLK";
+   defparam usb_pll_inst.ENABLE_ICEGATE = 1'b0;
+
+   localparam WIDTH = 10;
+   localparam DIVISOR = 625;
+   reg [WIDTH-1:0] counter;
+   reg             baud_clock;
+
+
+   initial begin
+      counter <= 'b0;
+      baud_clock <= 'b0;
+   end
+
+
+   always @(posedge intermediate) begin
       counter <= counter + 1;
-      baud <= 0;
       if (counter >= (DIVISOR-1)) begin
          counter <= 0;
-         baud <= 1;
+         baud_clock <= ~baud_clock;
       end
    end
+
+   reg             baud;
+
+   RisingEdgeTrig U2(.clk(clk), .out(baud), .in(baud_clock));
+
 endmodule
 
 module UartTx(input clk, input baud_edge, output tx, input [7:0] data, input latch_data, output busy);
