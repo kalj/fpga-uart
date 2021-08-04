@@ -12,10 +12,19 @@ module BaudGenInternal(input clk, output baud);
                                .RESETB(1),
                                .BYPASS(0)
                                );
+   // // 115200
+   // defparam usb_pll_inst.DIVF = 9-1;
+   // defparam usb_pll_inst.DIVQ = 0;
+
+   // 57600
+   defparam usb_pll_inst.DIVF = 9-1;
+   defparam usb_pll_inst.DIVQ = 1;
+
+   // // 9600
+   // defparam usb_pll_inst.DIVF = 3-1;
+   // defparam usb_pll_inst.DIVQ = 2;
 
    defparam usb_pll_inst.DIVR = 0;
-   defparam usb_pll_inst.DIVF = 9-1;  // 9-1
-   defparam usb_pll_inst.DIVQ = 1;  // 1, 0
    defparam usb_pll_inst.FILTER_RANGE = 3'b001;
    defparam usb_pll_inst.FEEDBACK_PATH = "SIMPLE";
    defparam usb_pll_inst.DELAY_ADJUSTMENT_MODE_FEEDBACK = "FIXED";
@@ -31,12 +40,10 @@ module BaudGenInternal(input clk, output baud);
    reg [WIDTH-1:0] counter;
    reg             baud_clock;
 
-
    initial begin
       counter <= 'b0;
       baud_clock <= 'b0;
    end
-
 
    always @(posedge intermediate) begin
       counter <= counter + 1;
