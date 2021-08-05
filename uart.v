@@ -84,10 +84,43 @@ module UartTx(input clk, input baud_edge, output tx, input [7:0] data, input lat
 
 endmodule
 
+module Uart(input       clk,
+            output      tx, input rx, input baud_edge,
+            input [1:0] addr,
+            input       rw, // 1: read, 0: write
+            input       ncs, input nrst,
+            inout [7:0] data);
+
+   wire reading = (!ncs & rw & nrst); // output if selected and not writing and not resetting
+   wire writing = (!ncs & !rw & nrst); // input if selected and writing and not resetting
+
+   wire [7:0] data_out;
+   wire [7:0] data_in;
+
+   SB_IO #(
+       .PIN_TYPE(6'b 1010_01), // PIN_OUTPUT_TRISTATE - PIN_INPUT
+       .PULLUP(1'b 0)
+   ) iobuf_mybuf [7:0] (
+       .PACKAGE_PIN(data),
+       .OUTPUT_ENABLE({8{reading}}),
+       .D_OUT_0(data_out),
+       .D_IN_0(data_in)
+   );
+
+   wire                    tx_busy;
+   wire                    write_trig;
+
+   RisingEdgeTrig U2(.clk(clk), .out(write_trig), .in(writing));
+
+   UartTx     U1(.clk(clk), .baud_edge(baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
+
+   assign data_out = reading?"Q":0;
+
+endmodule
+
 module Top(input CLK,
-           output LED,
            // tx & rx, baud
-           output PIN_23, input PIN_22, output PIN_21, output PIN_20,
+           output PIN_23, input PIN_22, output PIN_21,
            // addr0, addr1,
            input  PIN_14, input PIN_15,
            // rw, ~cs, ~rst
@@ -101,15 +134,13 @@ module Top(input CLK,
    wire          baud_edge;
    BaudGenInternal U1(.clk(CLK), .baud(baud_edge));
 
-   wire          btrig;
-   FallingEdgeTrig U2(.clk(CLK), .out(btrig), .in(PIN_17));
-
-   wire          busy;
-
-   UartTx U3( .clk(CLK), .baud_edge(baud_edge), .tx(PIN_23), .data(data_bus), .latch_data(btrig), .busy(busy));
-
-   assign LED = busy;
    assign PIN_21 = baud_edge;
-   assign PIN_20 = busy;
+
+   Uart U2(.clk(CLK),
+           .tx(PIN_23), .rx(PIN_22),
+           .baud_edge(baud_edge),
+           .addr(addr),
+           .rw(PIN_16), .ncs(PIN_17), .nrst(PIN_18),
+           .data(data_bus));
 
 endmodule
