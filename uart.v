@@ -47,7 +47,7 @@ module BaudGenInternal(input clk, output baud);
 
    always @(posedge intermediate) begin
       counter <= counter + 1;
-      if (counter >= (DIVISOR-1)) begin
+      if (counter == (DIVISOR-1)) begin
          counter <= 0;
          baud_clock <= ~baud_clock;
       end
