@@ -107,14 +107,17 @@ module Uart(input       clk,
        .D_IN_0(data_in)
    );
 
-   wire                    tx_busy;
    wire                    write_trig;
+   RisingEdgeTrig U1(.clk(clk), .out(write_trig), .in(writing));
 
-   RisingEdgeTrig U2(.clk(clk), .out(write_trig), .in(writing));
+   wire                    tx_busy;
+   UartTx     U2(.clk(clk), .baud_edge(baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
 
-   UartTx     U1(.clk(clk), .baud_edge(baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
+   wire                   status = tx_busy;
 
-   assign data_out = reading?tx_busy:0;
+
+
+   assign data_out = reading?status:0;
 
 endmodule
 
