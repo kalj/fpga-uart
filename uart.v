@@ -114,7 +114,7 @@ module Uart(input       clk,
 
    UartTx     U1(.clk(clk), .baud_edge(baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
 
-   assign data_out = reading?"Q":0;
+   assign data_out = reading?tx_busy:0;
 
 endmodule
 
