@@ -71,7 +71,7 @@ void send_char(char ch) {
 }
 
 char recv_char() {
-    while( (read_reg(0) & 0x2) != 0 );
+    while( (read_reg(0) & 0x2) == 0 );
     return read_reg(1);
 }
 
@@ -125,4 +125,9 @@ void loop() {
     Serial.print(" ");
     Serial.print(res4, HEX);
     Serial.println();
+
+    char ch = recv_char();
+    Serial.print("received:  ");
+    Serial.println(ch);
+    delay(100);
 }
