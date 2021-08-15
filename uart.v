@@ -92,7 +92,9 @@ module Uart(input       clk,
    wire reading = (!ncs & rw & nrst); // output if selected and not writing and not resetting
    wire writing = (!ncs & !rw & nrst); // input if selected and writing and not resetting
 
-   wire [7:0] data_out;
+   reg [7:0] data_oe = 0;
+
+   reg [7:0] data_out = 0;
    wire [7:0] data_in;
 
    SB_IO #(
@@ -100,10 +102,19 @@ module Uart(input       clk,
        .PULLUP(1'b 0)
    ) iobuf_mybuf [7:0] (
        .PACKAGE_PIN(data),
-       .OUTPUT_ENABLE({8{reading}}),
+       .OUTPUT_ENABLE(data_oe),
        .D_OUT_0(data_out),
        .D_IN_0(data_in)
    );
+
+   always @(posedge clk) begin
+      if (reading) begin
+         data_oe <= ~0; // all ones
+      end
+      else begin
+         data_oe <= 0;
+      end
+   end
 
    wire                    write_trig;
    RisingEdgeTrig U1(.clk(clk), .out(write_trig), .in(writing));
@@ -111,11 +122,24 @@ module Uart(input       clk,
    wire                    tx_busy;
    UartTx     U2(.clk(clk), .baud_edge(baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
 
-   wire                   status = tx_busy;
+   wire                    rx_available = 1;
+   reg [7:0]              rx_data = "A";
+   // UartRx     U3(.clk(clk), .rx(rx), .data(rx_data), .baud(baud), .available(rx_available));
 
 
+   always @(posedge clk) begin
+      data_out <= 0;
 
-   assign data_out = reading?status:0;
+      if (reading && (addr==2'b00)) begin
+         // status
+         data_out <= { 6'b0, rx_available, tx_busy };
+      end
+
+      if (reading && rx_available && (addr==2'b01)) begin
+         // rx data
+         data_out <= rx_data;
+      end
+   end
 
 endmodule
 
