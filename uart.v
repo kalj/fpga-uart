@@ -6,34 +6,34 @@ module BaudGenInternal(input clk, output baud);
 
    wire intermediate;
 
-   SB_PLL40_CORE usb_pll_inst (
-                               .REFERENCECLK(clk),
-                               .PLLOUTCORE(intermediate),
-                               .RESETB(1),
-                               .BYPASS(0)
-                               );
-   // // 115200
-   // defparam usb_pll_inst.DIVF = 9-1;
-   // defparam usb_pll_inst.DIVQ = 0;
+   // 115200
+   // localparam DIVF = 9-1;
+   // localparam DIVQ = 0;
 
    // 57600
-   defparam usb_pll_inst.DIVF = 9-1;
-   defparam usb_pll_inst.DIVQ = 1;
+   localparam DIVF = 9-1;
+   localparam DIVQ = 1;
 
-   // // 9600
-   // defparam usb_pll_inst.DIVF = 3-1;
-   // defparam usb_pll_inst.DIVQ = 2;
+   // 9600
+   // localparam DIVF = 3-1;
+   // localparam DIVQ = 2;
 
-   defparam usb_pll_inst.DIVR = 0;
-   defparam usb_pll_inst.FILTER_RANGE = 3'b001;
-   defparam usb_pll_inst.FEEDBACK_PATH = "SIMPLE";
-   defparam usb_pll_inst.DELAY_ADJUSTMENT_MODE_FEEDBACK = "FIXED";
-   defparam usb_pll_inst.FDA_FEEDBACK = 4'b0000;
-   defparam usb_pll_inst.DELAY_ADJUSTMENT_MODE_RELATIVE = "FIXED";
-   defparam usb_pll_inst.FDA_RELATIVE = 4'b0000;
-   defparam usb_pll_inst.SHIFTREG_DIV_MODE = 2'b00;
-   defparam usb_pll_inst.PLLOUT_SELECT = "GENCLK";
-   defparam usb_pll_inst.ENABLE_ICEGATE = 1'b0;
+   SB_PLL40_CORE #(.DIVF(DIVF),
+                   .DIVQ(DIVQ),
+                   .DIVR(0),
+                   .FILTER_RANGE(3'b001),
+                   .FEEDBACK_PATH("SIMPLE"),
+                   .DELAY_ADJUSTMENT_MODE_FEEDBACK("FIXED"),
+                   .FDA_FEEDBACK(4'b0000),
+                   .DELAY_ADJUSTMENT_MODE_RELATIVE("FIXED"),
+                   .FDA_RELATIVE(4'b0000),
+                   .SHIFTREG_DIV_MODE(2'b00),
+                   .PLLOUT_SELECT("GENCLK"),
+                   .ENABLE_ICEGATE(1'b0),
+                   ) usb_pll_inst (.REFERENCECLK(clk),
+                                   .PLLOUTCORE(intermediate),
+                                   .RESETB(1),
+                                   .BYPASS(0));
 
    localparam WIDTH = 10;
    localparam DIVISOR = 625;
@@ -52,8 +52,6 @@ module BaudGenInternal(input clk, output baud);
          baud_clock <= ~baud_clock;
       end
    end
-
-   reg             baud;
 
    RisingEdgeTrig U2(.clk(clk), .out(baud), .in(baud_clock));
 
