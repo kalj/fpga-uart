@@ -82,6 +82,48 @@ module UartTx(input clk, input baud_edge, output tx, input [7:0] data, input lat
 
 endmodule
 
+module UartRx(input clk, input baud_edge, input rx, output [7:0] data, output data_ready);
+
+   reg [3:0] bits_received = 0;
+
+   reg [7:0] data = 0;
+   reg       data_ready = 0;
+   reg       prev_rx = 0;
+
+   always @(posedge clk) begin
+
+      if(baud_edge) begin
+
+         if(bits_received == 0 && rx == 0 && prev_rx == 1) begin
+            bits_received <= bits_received+1;
+         end
+
+         if(bits_received > 0 && bits_received <9) begin
+            data <= { rx, data[7:1] };
+            bits_received <= bits_received+1;
+         end
+
+         if(bits_received == 9) begin
+            bits_received <= 0;
+
+            // only set to ready if a trailing "1" was found
+            if(rx==1) data_ready <= 1;
+
+         end
+
+         prev_rx <= rx;
+
+      end
+
+      // data_ready is only high for one cycle
+      if(data_ready) begin
+         data_ready <= 0;
+         data <= 0;
+      end
+   end
+
+endmodule
+
 module Uart(input       clk,
             output      tx, input rx, input baud_edge,
             input [1:0] addr,
@@ -122,35 +164,41 @@ module Uart(input       clk,
    wire                    tx_busy;
    UartTx     U2(.clk(clk), .baud_edge(baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
 
-   reg                    rx_available = 0;
-   reg [7:0]              rx_data = "A";
-   // UartRx     U3(.clk(clk), .rx(rx), .data(rx_data), .baud(baud), .available(rx_available));
+   wire                     new_rx_data_ready;
+   wire [7:0]               new_rx_data;
+   UartRx     U3(.clk(clk), .rx(rx), .data(new_rx_data), .baud_edge(baud_edge), .data_ready(new_rx_data_ready));
 
-   reg                    prev_reading = 0;
+   reg                      rx_available;
+   reg [7:0]                rx_data;
+
+   wire                     reading_start;
+   wire                     reading_end;
+   RisingEdgeTrig U4(.clk(clk), .out(reading_start), .in(reading));
+   FallingEdgeTrig U5(.clk(clk), .out(reading_end),   .in(reading));
 
    always @(posedge clk) begin
-      data_out <= 0;
 
-      if (write_trig) begin
+      if (new_rx_data_ready) begin
+         rx_data      <= new_rx_data;
          rx_available <= 1;
       end
 
-      if (reading && (addr==2'b00)) begin
-         // status
-         data_out <= { 6'b0, rx_available, tx_busy };
+      if (reading_start) begin
+         if (addr==2'b00) begin
+            // status
+            data_out <= { 6'b0, rx_available, tx_busy };
+         end
+
+         if (addr==2'b01 && rx_available) begin
+            // rx data
+            data_out     <= rx_data;
+            rx_available <= 0;
+         end
       end
 
-      if (reading && rx_available && (addr==2'b01)) begin
-         // rx data
-         data_out <= rx_data;
+      if (reading_end) begin
+         data_out <= 0;
       end
-
-      if (!reading  && prev_reading && (addr==2'b01)) begin
-         // end of data read
-         rx_available <= 0;
-      end
-
-      prev_reading <= reading;
    end
 
 endmodule
