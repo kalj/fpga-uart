@@ -70,8 +70,16 @@ void send_char(char ch) {
     write_reg(0, ch);
 }
 
-char recv_char() {
-    while( (read_reg(0) & 0x2) == 0 );
+bool data_available() {
+    return (read_reg(0) & 0x2) == 0x2;
+}
+
+char recv_char_blocking() {
+    while(!data_available());
+    return read_reg(1);
+}
+
+char recv_char_unblocking() {
     return read_reg(1);
 }
 
@@ -102,32 +110,31 @@ void setup() {
 
 }
 
-uint8_t ch = 'A';
+/* uint8_t ch = 'A'; */
+
+/* void loop() { */
+
+/*     for(int i=0; i<sizeof(charr); i++) { */
+/*         send_char(charr[i]); */
+/*     } */
+/*     send_char('\n'); */
+
+/*     char ch = recv_char(); */
+/*     Serial.print("received:  "); */
+/*     Serial.println(ch); */
+/*     delay(100); */
+/* } */
+
+
 
 void loop() {
-
-    for(int i=0; i<sizeof(charr); i++) {
-        send_char(charr[i]);
+    while(Serial.available() > 0) {
+        char ch = Serial.read();
+        send_char(ch);
     }
-    send_char('\n');
 
-    uint8_t res1 = read_reg(0);
-    uint8_t res2 = read_reg(0);
-    uint8_t res3 = read_reg(0);
-    uint8_t res4 = read_reg(0);
-    delay(500);
-    Serial.print("status:  ");
-    Serial.print(res1, HEX);
-    Serial.print(" ");
-    Serial.print(res2, HEX);
-    Serial.print(" ");
-    Serial.print(res3, HEX);
-    Serial.print(" ");
-    Serial.print(res4, HEX);
-    Serial.println();
-
-    char ch = recv_char();
-    Serial.print("received:  ");
-    Serial.println(ch);
-    delay(100);
+    while( data_available()) {
+        char ch = recv_char_unblocking();
+        Serial.print(ch);
+    }
 }
