@@ -122,13 +122,18 @@ module Uart(input       clk,
    wire                    tx_busy;
    UartTx     U2(.clk(clk), .baud_edge(baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
 
-   wire                    rx_available = 1;
+   reg                    rx_available = 0;
    reg [7:0]              rx_data = "A";
    // UartRx     U3(.clk(clk), .rx(rx), .data(rx_data), .baud(baud), .available(rx_available));
 
+   reg                    prev_reading = 0;
 
    always @(posedge clk) begin
       data_out <= 0;
+
+      if (write_trig) begin
+         rx_available <= 1;
+      end
 
       if (reading && (addr==2'b00)) begin
          // status
@@ -139,6 +144,13 @@ module Uart(input       clk,
          // rx data
          data_out <= rx_data;
       end
+
+      if (!reading  && prev_reading && (addr==2'b01)) begin
+         // end of data read
+         rx_available <= 0;
+      end
+
+      prev_reading <= reading;
    end
 
 endmodule
