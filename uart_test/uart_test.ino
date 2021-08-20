@@ -1,7 +1,7 @@
+#define NRST_PIN  A4
+#define NCS_PIN   A3
+#define RW_PIN    A2
 uint8_t data_pins[] = {2, 3, 4, 5, 6, 7, 8, 9};
-uint8_t nrst_pin = A4;
-uint8_t ncs_pin = A3;
-uint8_t rw_pin = A2;
 uint8_t addr_pins[] = {A0, A1};
 
 void set_address(uint8_t addr) {
@@ -33,34 +33,34 @@ void write_reg(uint8_t addr, uint8_t data) {
 
     set_address(addr);
 
-    digitalWrite(rw_pin, LOW);
+    digitalWrite(RW_PIN, LOW);
 
     set_data(data);
     set_data_dir(OUTPUT);
 
-    digitalWrite(ncs_pin, LOW);
+    digitalWrite(NCS_PIN, LOW);
     delayMicroseconds(1);
-    digitalWrite(ncs_pin, HIGH);
+    digitalWrite(NCS_PIN, HIGH);
     delayMicroseconds(1);
 
     set_data_dir(INPUT);
-    digitalWrite(rw_pin, HIGH);
+    digitalWrite(RW_PIN, HIGH);
 }
 
 uint8_t read_reg(uint8_t addr) {
     set_address(addr);
 
     // HIGH is default
-    // digitalWrite(rw_pin, HIGH);
+    // digitalWrite(RW_PIN, HIGH);
 
     // bus is input by default
     //set_data_dir(INPUT);
 
-    digitalWrite(ncs_pin, LOW);
+    digitalWrite(NCS_PIN, LOW);
     delayMicroseconds(1);
 
     uint8_t data = get_data();
-    digitalWrite(ncs_pin, HIGH);
+    digitalWrite(NCS_PIN, HIGH);
 
     return data;
 }
@@ -91,14 +91,14 @@ const char charr[] = {
 void setup() {
     set_data_dir(INPUT);
 
-    digitalWrite(nrst_pin, HIGH);
-    pinMode(nrst_pin, OUTPUT);
+    digitalWrite(NRST_PIN, HIGH);
+    pinMode(NRST_PIN, OUTPUT);
 
-    digitalWrite(ncs_pin, HIGH);
-    pinMode(ncs_pin, OUTPUT);
+    digitalWrite(NCS_PIN, HIGH);
+    pinMode(NCS_PIN, OUTPUT);
 
-    digitalWrite(rw_pin, HIGH);
-    pinMode(rw_pin, OUTPUT);
+    digitalWrite(RW_PIN, HIGH);
+    pinMode(RW_PIN, OUTPUT);
 
     for(int i=0; i<2; i++) {
         digitalWrite(addr_pins[i], LOW);
