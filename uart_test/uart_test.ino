@@ -113,7 +113,8 @@ void setup() {
 
 }
 
-char buf[80];
+#define BUFSIZE 80
+char buf[BUFSIZE];
 
 void loop() {
     while(Serial.available() > 0) {
@@ -121,15 +122,18 @@ void loop() {
         send_char(ch);
     }
 
-    int n = 0;
-    while( data_available() && n<79) {
-        char ch = recv_char_unblocking();
-        buf[n] = ch;
-        n++;
-    }
-    if(n > 0) {
-        buf[n] = 0;
-        Serial.print(buf);
+    while(data_available()) {
+        int n = 0;
+        while( data_available() && n<(BUFSIZE-1)) {
+            char ch = recv_char_unblocking();
+            buf[n] = ch;
+            n++;
+        }
+
+        if(n > 0) {
+            buf[n] = 0;
+            Serial.print(buf);
+        }
     }
 }
 
@@ -142,12 +146,12 @@ uint8_t ch = 'A';
 
 void loop() {
 
-    for(int i=0; i<sizeof(charr); i++) {
+    for(int i=0; i<(int)sizeof(charr); i++) {
         send_char(charr[i]);
     }
     send_char('\n');
 
-    // char ch = recv_char();
+    // char ch = recv_char_unblocking();
     // Serial.print("received:  ");
     // Serial.println(ch);
     delay(100);
