@@ -1,3 +1,7 @@
+#define ARDUINO_PORT_VERSION 
+
+#if defined(ARDUINO_PORT_VERSION)
+
 #define NRST_PIN  A4
 #define NCS_PIN   A3
 #define RW_PIN    A2
@@ -5,14 +9,31 @@
 #define NCS_BIT   3
 #define RW_BIT    2
 
-uint8_t data_pins[] = {2, 3, 4, 5, 6, 7,        8, 9};
-uint8_t addr_pins[] = {A0, A1};
+static inline void set_rw(int lvl) {
+    if(lvl==HIGH) {
+        PORTC |= (1<<RW_BIT);
+    } else {
+        PORTC &= ~(1<<RW_BIT);
+    }
+}
 
-static inline void set_portc_bit(int b) { PORTC |= (1<<b); }
-static inline void clr_portc_bit(int b) { PORTC &= ~(1<<b); }
+static inline void set_ncs(int lvl) {
+    if(lvl==HIGH) {
+        PORTC |= (1<<NCS_BIT);
+    } else {
+        PORTC &= ~(1<<NCS_BIT);
+    }
+}
+
+static inline void set_nrst(int lvl) {
+    if(lvl==HIGH) {
+        PORTC |= (1<<NRST_BIT);
+    } else {
+        PORTC &= ~(1<<NRST_BIT);
+    }
+}
 
 void set_address(uint8_t addr) {
-
     PORTC = (PORTC&(~B00000011)) | (addr&0x11);
 }
 
@@ -26,7 +47,6 @@ uint8_t get_data() {
 }
 
 void set_data_dir(int dir) {
-
     if(dir==OUTPUT) {
         DDRB = DDRB | B00000011; // pins 8-9 as output
         DDRD = DDRD | B11111100; // pins 2-7 as output
@@ -35,23 +55,24 @@ void set_data_dir(int dir) {
         DDRD = DDRD & B00000011; // pins 2-7 as input
     }
 }
+#endif
 
 void write_reg(uint8_t addr, uint8_t data) {
 
     set_address(addr);
 
-    clr_portc_bit(RW_BIT);
+    set_rw(LOW);
 
-    set_data(data);
     set_data_dir(OUTPUT);
+    set_data(data);
 
-    clr_portc_bit(NCS_BIT);
-    delayMicroseconds(4);
-    set_portc_bit(NCS_BIT);
-    delayMicroseconds(4);
+    set_ncs(LOW);
+    delayMicroseconds(1);
+    set_ncs(HIGH);
+    delayMicroseconds(1);
 
     set_data_dir(INPUT);
-    set_portc_bit(RW_BIT);
+    set_rw(HIGH);
 
 }
 
@@ -59,16 +80,16 @@ uint8_t read_reg(uint8_t addr) {
     set_address(addr);
 
     // HIGH is default
-    /* set_portc_bit(RW_BIT); */
+    /* set_rw(HIGH); */
 
     // bus is input by default
     //set_data_dir(INPUT);
 
-    clr_portc_bit(NCS_BIT);
-    delayMicroseconds(4);
+    set_ncs(LOW);
+    delayMicroseconds(1);
 
     uint8_t data = get_data();
-    set_portc_bit(NCS_BIT);
+    set_ncs(HIGH);
 
     return data;
 }
@@ -94,19 +115,19 @@ char recv_char_unblocking() {
 void setup() {
     set_data_dir(INPUT);
 
-    set_portc_bit(NRST_BIT);
     pinMode(NRST_PIN, OUTPUT);
+    set_nrst(HIGH);
 
-    set_portc_bit(NCS_BIT);
     pinMode(NCS_PIN, OUTPUT);
+    set_ncs(HIGH);
 
-    set_portc_bit(RW_BIT);
     pinMode(RW_PIN, OUTPUT);
+    set_rw(HIGH);
 
     for(int i=0; i<2; i++) {
-        set_address(0);
         pinMode(addr_pins[i], OUTPUT);
     }
+    set_address(0);
 
     delay(100);
     Serial.begin(115200);
