@@ -1,4 +1,51 @@
-#define ARDUINO_PORT_VERSION 
+/* #define ARDUINO_BASIC_VERSION */
+#define ARDUINO_PORT_VERSION
+
+#if defined(ARDUINO_BASIC_VERSION)
+#define NRST_PIN  A4
+#define NCS_PIN   A3
+#define RW_PIN    A2
+
+uint8_t data_pins[] = {2, 3, 4, 5, 6, 7, 8, 9};
+uint8_t addr_pins[] = {A0, A1};
+
+static inline void set_rw(int lvl) {
+    digitalWrite(RW_PIN, lvl);
+}
+
+static inline void set_ncs(int lvl) {
+    digitalWrite(NCS_PIN, lvl);
+}
+
+static inline void set_nrst(int lvl) {
+    digitalWrite(NRST_PIN, lvl);
+}
+
+void set_address(uint8_t addr) {
+    digitalWrite(addr_pins[0], addr&0x1);
+    digitalWrite(addr_pins[1], (addr>>1)&0x1);
+}
+
+void set_data(uint8_t data) {
+    for(int i=0; i<8; i++) {
+        digitalWrite(data_pins[i], (data>>i)&0x1);
+    }
+}
+
+uint8_t get_data() {
+    uint8_t data = 0;
+    for(int i=0; i<8; i++) {
+        data |= digitalRead(data_pins[i])<<i;
+    }
+    return data;
+}
+
+void set_data_dir(int dir) {
+    for(int i=0; i<8; i++) {
+        pinMode(data_pins[i], dir);
+    }
+}
+#endif
 
 #if defined(ARDUINO_PORT_VERSION)
 
