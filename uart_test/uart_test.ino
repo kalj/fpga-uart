@@ -53,6 +53,9 @@ void set_data_dir(int dir) {
 #define NRST_PIN  A4
 #define NCS_PIN   A3
 #define RW_PIN    A2
+
+uint8_t addr_pins[] = {A0, A1};
+
 #define NRST_BIT  4
 #define NCS_BIT   3
 #define RW_BIT    2
