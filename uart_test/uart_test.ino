@@ -1,5 +1,6 @@
 /* #define ARDUINO_BASIC_VERSION */
 #define ARDUINO_PORT_VERSION
+/* #define TEENSY_VERSION */
 
 #if defined(ARDUINO_BASIC_VERSION)
 #define NRST_PIN  A4
@@ -100,6 +101,52 @@ void set_data_dir(int dir) {
     } else {
         DDRB = DDRB & B11111100; // pins 8-9 as input
         DDRD = DDRD & B00000011; // pins 2-7 as input
+    }
+}
+#endif
+
+#if defined(TEENSY_VERSION)
+#define NRST_PIN  12
+#define NCS_PIN   11
+#define RW_PIN    10
+
+uint8_t data_pins[] = {14, 15, 16, 17, 18, 19, 20, 21};
+uint8_t addr_pins[] = {8, 9};
+
+static inline void set_rw(int lvl) {
+    digitalWrite(RW_PIN, lvl);
+}
+
+static inline void set_ncs(int lvl) {
+    digitalWrite(NCS_PIN, lvl);
+}
+
+static inline void set_nrst(int lvl) {
+    digitalWrite(NRST_PIN, lvl);
+}
+
+void set_address(uint8_t addr) {
+    digitalWrite(addr_pins[0], addr&0x1);
+    digitalWrite(addr_pins[1], (addr>>1)&0x1);
+}
+
+void set_data(uint8_t data) {
+    for(int i=0; i<8; i++) {
+        digitalWrite(data_pins[i], (data>>i)&0x1);
+    }
+}
+
+uint8_t get_data() {
+    uint8_t data = 0;
+    for(int i=0; i<8; i++) {
+        data |= digitalRead(data_pins[i])<<i;
+    }
+    return data;
+}
+
+void set_data_dir(int dir) {
+    for(int i=0; i<8; i++) {
+        pinMode(data_pins[i], dir);
     }
 }
 #endif
