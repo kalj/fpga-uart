@@ -3,61 +3,43 @@
 `include "edge_trig.v"
 
 module BaudGenInternal(input clk, output baud);
+   // define a counter to divide the clock down from 16MHz
 
-   wire intermediate;
+   // -> 9600 Hz
+   localparam DIVISOR = 1667;
+   localparam WIDTH = 11;
+   localparam HALF_DIVISOR = 833;
 
-   // 115200
-   // localparam DIVF = 9-1;
-   // localparam DIVQ = 0;
+   // -> 57600 Hz
+   // localparam DIVISOR = 278;
+   // localparam WIDTH = 9;
+   // localparam HALF_DIVISOR = 139;
 
-   // 57600
-   localparam DIVF = 9-1;
-   localparam DIVQ = 1;
+   // -> 115200 Hz
+   // localparam DIVISOR = 139;
+   // localparam WIDTH = 8;
+   // localparam HALF_DIVISOR = 69;
 
-   // 9600
-   // localparam DIVF = 3-1;
-   // localparam DIVQ = 2;
-
-   SB_PLL40_CORE #(.DIVF(DIVF),
-                   .DIVQ(DIVQ),
-                   .DIVR(0),
-                   .FILTER_RANGE(3'b001),
-                   .FEEDBACK_PATH("SIMPLE"),
-                   .DELAY_ADJUSTMENT_MODE_FEEDBACK("FIXED"),
-                   .FDA_FEEDBACK(4'b0000),
-                   .DELAY_ADJUSTMENT_MODE_RELATIVE("FIXED"),
-                   .FDA_RELATIVE(4'b0000),
-                   .SHIFTREG_DIV_MODE(2'b00),
-                   .PLLOUT_SELECT("GENCLK"),
-                   .ENABLE_ICEGATE(1'b0),
-                   ) usb_pll_inst (.REFERENCECLK(clk),
-                                   .PLLOUTCORE(intermediate),
-                                   .RESETB(1),
-                                   .BYPASS(0));
-
-   localparam WIDTH = 10;
-   localparam DIVISOR = 625;
    reg [WIDTH-1:0] counter;
-   reg             baud_clock;
+   reg             baud = 0;
 
-   initial begin
-      counter <= 'b0;
-      baud_clock <= 'b0;
-   end
-
-   always @(posedge intermediate) begin
+   // run counter from 16MHz clock
+   always @(posedge clk) begin
       counter <= counter + 1;
-      if (counter == (DIVISOR-1)) begin
+      baud <= 0;
+
+      if (counter >= (DIVISOR-1)) begin
          counter <= 0;
-         baud_clock <= ~baud_clock;
+         baud <= 1;
       end
    end
 
-   RisingEdgeTrig U2(.clk(clk), .out(baud), .in(baud_clock));
-
 endmodule
 
-module UartTx(input clk, input baud_edge, output tx, input [7:0] data, input latch_data, output busy);
+
+module UartTx(input clk, output baud_edge, output tx, input [7:0] data, input latch_data, output busy);
+
+   BaudGenInternal U1(.clk(clk), .baud(baud_edge));
 
    localparam REGWIDTH = 12;
    reg [(REGWIDTH-1):0] buffer;
@@ -82,37 +64,51 @@ module UartTx(input clk, input baud_edge, output tx, input [7:0] data, input lat
 
 endmodule
 
-module UartRx(input clk, input baud_edge, input rx, output [7:0] data, output data_ready);
+module UartRx(input clk, output baud_edge, input rx, output [7:0] data,
+              output data_ready);
 
-   reg [3:0] bits_received = 0;
+   BaudGenInternal U1(.clk(clk), .baud(baud_edge));
 
    reg [7:0] data = 0;
    reg       data_ready = 0;
-   reg       prev_rx = 0;
+
+   localparam STATE_READY = 0;
+   localparam STATE_RECEIVING_DATA = 1;
+   localparam STATE_RECEIVING_STOP_BIT = 2;
+
+   reg [1:0] state = STATE_READY;
+   reg [2:0] data_bits_received = 0;
+
+   reg              cur_rx = 0;
+   reg              prev_rx = 0;
 
    always @(posedge clk) begin
-
       if(baud_edge) begin
+         // latch current and previous rx value into registers
+         cur_rx  <= rx;
+         prev_rx <= cur_rx;
 
-         if(bits_received == 0 && rx == 0 && prev_rx == 1) begin
-            bits_received <= bits_received+1;
+         if(state == STATE_READY && !cur_rx && prev_rx) begin
+            // rx must be low due to above
+            data_bits_received <= 0;
+            state <= STATE_RECEIVING_DATA;
          end
 
-         if(bits_received > 0 && bits_received <9) begin
-            data <= { rx, data[7:1] };
-            bits_received <= bits_received+1;
+         if(state == STATE_RECEIVING_DATA) begin
+            data <= { cur_rx, data[7:1] };
+            if (data_bits_received != 7)
+              data_bits_received <= data_bits_received+1;
+            else begin
+               state <= STATE_RECEIVING_STOP_BIT;
+            end
          end
 
-         if(bits_received == 9) begin
-            bits_received <= 0;
-
+         if(state == STATE_RECEIVING_STOP_BIT) begin
             // only set to ready if a trailing "1" was found
-            if(rx==1) data_ready <= 1;
+            if(cur_rx) data_ready <= 1;
 
+            state <=  STATE_READY;
          end
-
-         prev_rx <= rx;
-
       end
 
       // data_ready is only high for one cycle
@@ -121,11 +117,10 @@ module UartRx(input clk, input baud_edge, input rx, output [7:0] data, output da
          data <= 0;
       end
    end
-
 endmodule
 
 module Uart(input       clk,
-            output      tx, input rx, input baud_edge,
+            output      tx, input rx, output tx_baud_edge, output rx_baud_edge,
             input [1:0] addr,
             input       rw, // 1: read, 0: write
             input       ncs, input nrst,
@@ -162,11 +157,11 @@ module Uart(input       clk,
    RisingEdgeTrig U1(.clk(clk), .out(write_trig), .in(writing));
 
    wire                    tx_busy;
-   UartTx     U2(.clk(clk), .baud_edge(baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
+   UartTx     U2(.clk(clk), .baud_edge(tx_baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
 
    wire                     new_rx_data_ready;
    wire [7:0]               new_rx_data;
-   UartRx     U3(.clk(clk), .rx(rx), .data(new_rx_data), .baud_edge(baud_edge), .data_ready(new_rx_data_ready));
+   UartRx     U3(.clk(clk), .rx(rx), .data(new_rx_data), .baud_edge(rx_baud_edge), .data_ready(new_rx_data_ready));
 
    reg                      rx_available;
    reg [7:0]                rx_data;
@@ -204,28 +199,23 @@ module Uart(input       clk,
 endmodule
 
 module Top(input CLK,
-           // tx & rx, baud
-           output PIN_23, input PIN_22, output PIN_21,
+           // tx & rx
+           output PIN_23, input PIN_22,
            // addr0, addr1,
            input  PIN_14, input PIN_15,
            // rw, ~cs, ~rst
            input  PIN_16, input PIN_17, input PIN_18,
+           // debug
+           // output PIN_20, output PIN_21,
            // data bus
            inout  PIN_6, inout PIN_7, inout PIN_8, inout PIN_9, inout PIN_10, inout PIN_11, inout PIN_12, inout PIN_13);
 
    wire [7:0]    data_bus = {PIN_13, PIN_12, PIN_11, PIN_10, PIN_9, PIN_8, PIN_7, PIN_6};
    wire [1:0]    addr = {PIN_15, PIN_14};
 
-   wire          baud_edge;
-   BaudGenInternal U1(.clk(CLK), .baud(baud_edge));
-
-   assign PIN_21 = baud_edge;
-
-   Uart U2(.clk(CLK),
+   Uart U1(.clk(CLK),
            .tx(PIN_23), .rx(PIN_22),
-           .baud_edge(baud_edge),
            .addr(addr),
            .rw(PIN_16), .ncs(PIN_17), .nrst(PIN_18),
            .data(data_bus));
-
 endmodule
