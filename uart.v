@@ -6,9 +6,9 @@ module BaudGenInternal(input clk, output baud, input half_reset);
    // define a counter to divide the clock down from 16MHz
 
    // -> 9600 Hz
-   localparam DIVISOR = 1667;
-   localparam WIDTH = 11;
-   localparam HALF_DIVISOR = 833;
+   // localparam DIVISOR = 1667;
+   // localparam WIDTH = 11;
+   // localparam HALF_DIVISOR = 833;
 
    // -> 57600 Hz
    // localparam DIVISOR = 278;
@@ -16,9 +16,9 @@ module BaudGenInternal(input clk, output baud, input half_reset);
    // localparam HALF_DIVISOR = 139;
 
    // -> 115200 Hz
-   // localparam DIVISOR = 139;
-   // localparam WIDTH = 8;
-   // localparam HALF_DIVISOR = 69;
+   localparam DIVISOR = 139;
+   localparam WIDTH = 8;
+   localparam HALF_DIVISOR = 69;
 
    reg [WIDTH-1:0] counter;
    reg             baud = 0;
