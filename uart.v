@@ -2,7 +2,7 @@
 
 `include "edge_trig.v"
 
-module BaudGenInternal(input clk, output baud);
+module BaudGenInternal(input clk, output baud, input half_reset);
    // define a counter to divide the clock down from 16MHz
 
    // -> 9600 Hz
@@ -28,7 +28,10 @@ module BaudGenInternal(input clk, output baud);
       counter <= counter + 1;
       baud <= 0;
 
-      if (counter >= (DIVISOR-1)) begin
+      if (half_reset) begin
+         counter <= HALF_DIVISOR;
+      end
+      else if (counter >= (DIVISOR-1)) begin
          counter <= 0;
          baud <= 1;
       end
@@ -39,7 +42,7 @@ endmodule
 
 module UartTx(input clk, output baud_edge, output tx, input [7:0] data, input latch_data, output busy);
 
-   BaudGenInternal U1(.clk(clk), .baud(baud_edge));
+   BaudGenInternal U1(.clk(clk), .baud(baud_edge), .half_reset(0));
 
    localparam REGWIDTH = 12;
    reg [(REGWIDTH-1):0] buffer;
@@ -67,14 +70,16 @@ endmodule
 module UartRx(input clk, output baud_edge, input rx, output [7:0] data,
               output data_ready);
 
-   BaudGenInternal U1(.clk(clk), .baud(baud_edge));
+   reg              baud_reset = 0;
+   BaudGenInternal U1(.clk(clk), .baud(baud_edge), .half_reset(baud_reset));
 
    reg [7:0] data = 0;
    reg       data_ready = 0;
 
    localparam STATE_READY = 0;
-   localparam STATE_RECEIVING_DATA = 1;
-   localparam STATE_RECEIVING_STOP_BIT = 2;
+   localparam STATE_RECEIVING_START_BIT  = 1;
+   localparam STATE_RECEIVING_DATA = 2;
+   localparam STATE_RECEIVING_STOP_BIT = 3;
 
    reg [1:0] state = STATE_READY;
    reg [2:0] data_bits_received = 0;
@@ -83,12 +88,19 @@ module UartRx(input clk, output baud_edge, input rx, output [7:0] data,
    reg              prev_rx = 0;
 
    always @(posedge clk) begin
-      if(baud_edge) begin
-         // latch current and previous rx value into registers
-         cur_rx  <= rx;
-         prev_rx <= cur_rx;
+      // latch current and previous rx value into registers
+      cur_rx  <= rx;
+      prev_rx <= cur_rx;
 
-         if(state == STATE_READY && !cur_rx && prev_rx) begin
+      baud_reset <= 0;
+
+      if(state == STATE_READY && !cur_rx && prev_rx) begin
+         state <= STATE_RECEIVING_START_BIT;
+         baud_reset <= 1;
+      end
+
+      if(baud_edge) begin
+         if(state == STATE_RECEIVING_START_BIT) begin
             // rx must be low due to above
             data_bits_received <= 0;
             state <= STATE_RECEIVING_DATA;
