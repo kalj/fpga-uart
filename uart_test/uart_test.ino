@@ -7,8 +7,8 @@
 #define NCS_PIN   A3
 #define RW_PIN    A2
 
-uint8_t data_pins[] = {2, 3, 4, 5, 6, 7, 8, 9};
-uint8_t addr_pins[] = {A0, A1};
+const uint8_t data_pins[] = {2, 3, 4, 5, 6, 7, 8, 9};
+const uint8_t addr_pins[] = {A0, A1};
 
 static inline void set_rw(int lvl) {
     digitalWrite(RW_PIN, lvl);
@@ -54,7 +54,7 @@ void set_data_dir(int dir) {
 #define NCS_PIN   A3
 #define RW_PIN    A2
 
-uint8_t addr_pins[] = {A0, A1};
+const uint8_t addr_pins[] = {A0, A1};
 
 #define NRST_BIT  4
 #define NCS_BIT   3
@@ -113,8 +113,8 @@ void set_data_dir(int dir) {
 #define NCS_PIN   11
 #define RW_PIN    10
 
-uint8_t data_pins[] = {14, 15, 16, 17, 18, 19, 20, 21};
-uint8_t addr_pins[] = {8, 9};
+const uint8_t data_pins[] = {14, 15, 16, 17, 18, 19, 20, 21};
+const uint8_t addr_pins[] = {8, 9};
 
 static inline void set_rw(int lvl) {
     digitalWrite(RW_PIN, lvl);
