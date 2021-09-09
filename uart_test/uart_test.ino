@@ -3,15 +3,16 @@
 /* #define TEENSY_VERSION */
 
 #if defined(ARDUINO_BASIC_VERSION)
-#define NRST_PIN  A4
-#define NCS_PIN   A3
-#define RW_PIN    A2
+#define NRST_PIN   A2
+#define PHI2_PIN   A3
+#define NCS_PIN    A4
+#define NWE_PIN    A5
 
 const uint8_t data_pins[] = {2, 3, 4, 5, 6, 7, 8, 9};
 const uint8_t addr_pins[] = {A0, A1};
 
-static inline void set_rw(int lvl) {
-    digitalWrite(RW_PIN, lvl);
+static inline void set_nwe(int lvl) {
+    digitalWrite(NWE_PIN, lvl);
 }
 
 static inline void set_ncs(int lvl) {
@@ -50,21 +51,24 @@ void set_data_dir(int dir) {
 
 #if defined(ARDUINO_PORT_VERSION)
 
-#define NRST_PIN  A4
-#define NCS_PIN   A3
-#define RW_PIN    A2
+#define NRST_PIN   A2
+#define PHI2_PIN    A3
+#define NCS_PIN    A4
+#define NWE_PIN    A5
 
 const uint8_t addr_pins[] = {A0, A1};
 
-#define NRST_BIT  4
-#define NCS_BIT   3
-#define RW_BIT    2
+#define NRST_BIT   2
+#define PHI2_BIT    3
+#define NCS_BIT    4
+#define NWE_BIT    5
 
-static inline void set_rw(int lvl) {
+
+static inline void set_nwe(int lvl) {
     if(lvl==HIGH) {
-        PORTC |= (1<<RW_BIT);
+        PORTC |= (1<<NWE_BIT);
     } else {
-        PORTC &= ~(1<<RW_BIT);
+        PORTC &= ~(1<<NWE_BIT);
     }
 }
 
@@ -109,15 +113,17 @@ void set_data_dir(int dir) {
 #endif
 
 #if defined(TEENSY_VERSION)
-#define NRST_PIN  12
-#define NCS_PIN   11
-#define RW_PIN    10
+
+#define NRST_PIN   9
+#define PHI2_PIN    10
+#define NCS_PIN    11
+#define NWE_PIN    12
 
 const uint8_t data_pins[] = {14, 15, 16, 17, 18, 19, 20, 21};
-const uint8_t addr_pins[] = {8, 9};
+const uint8_t addr_pins[] = {7, 8};
 
-static inline void set_rw(int lvl) {
-    digitalWrite(RW_PIN, lvl);
+static inline void set_nwe(int lvl) {
+    digitalWrite(NWE_PIN, lvl);
 }
 
 static inline void set_ncs(int lvl) {
@@ -158,7 +164,7 @@ void write_reg(uint8_t addr, uint8_t data) {
 
     set_address(addr);
 
-    set_rw(LOW);
+    set_nwe(LOW);
 
     set_data_dir(OUTPUT);
     set_data(data);
@@ -169,7 +175,7 @@ void write_reg(uint8_t addr, uint8_t data) {
     delayMicroseconds(1);
 
     set_data_dir(INPUT);
-    set_rw(HIGH);
+    set_nwe(HIGH);
 
 }
 
@@ -177,7 +183,7 @@ uint8_t read_reg(uint8_t addr) {
     set_address(addr);
 
     // HIGH is default
-    /* set_rw(HIGH); */
+    /* set_nwe(HIGH); */
 
     // bus is input by default
     //set_data_dir(INPUT);
@@ -218,8 +224,8 @@ void setup() {
     pinMode(NCS_PIN, OUTPUT);
     set_ncs(HIGH);
 
-    pinMode(RW_PIN, OUTPUT);
-    set_rw(HIGH);
+    pinMode(NWE_PIN, OUTPUT);
+    set_nwe(HIGH);
 
     for(int i=0; i<2; i++) {
         pinMode(addr_pins[i], OUTPUT);
