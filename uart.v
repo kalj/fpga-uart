@@ -135,6 +135,7 @@ module Uart(input       clk,
             output      tx, input rx, output tx_baud_edge, output rx_baud_edge,
             input [1:0] addr,
             input       nwe,
+            input       phi2,
             input       ncs, input nrst,
             inout [7:0] data);
 
@@ -216,8 +217,7 @@ module Top(input CLK,
            // addr0, addr1,
            input  PIN_14, input PIN_15,
            // ~rst, phi2, ~cs, ~we
-           input  PIN_16, //input PIN_17,
-           input  PIN_18, input PIN_19,
+           input  PIN_16, input PIN_17, input PIN_18, input PIN_19,
            // debug
            // output PIN_20, output PIN_21,
            // data bus
@@ -229,6 +229,6 @@ module Top(input CLK,
    Uart U1(.clk(CLK),
            .tx(PIN_23), .rx(PIN_22),
            .addr(addr),
-           .nrst(PIN_16), .ncs(PIN_18), .nwe(PIN_19),
+           .nrst(PIN_16), .phi2(PIN_17), .ncs(PIN_18), .nwe(PIN_19),
            .data(data_bus));
 endmodule
