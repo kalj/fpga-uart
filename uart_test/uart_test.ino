@@ -197,22 +197,29 @@ uint8_t read_reg(uint8_t addr) {
     return data;
 }
 
+#define REG_STATUS 0x0
+#define REG_RXDATA 0x1
+#define REG_TXDATA 0x0
+
+#define STATUS_BIT_BUSY 0x1
+#define STATUS_BIT_RX_AVAIL 0x2
+
 void send_char(char ch) {
-    while(read_reg(0) & 0x1);
-    write_reg(0, ch);
+    while(read_reg(REG_STATUS) & STATUS_BIT_BUSY);
+    write_reg(REG_TXDATA, ch);
 }
 
 bool data_available() {
-    return (read_reg(0) & 0x2) == 0x2;
+    return (read_reg(REG_STATUS) & STATUS_BIT_RX_AVAIL) == STATUS_BIT_RX_AVAIL;
 }
 
 char recv_char_blocking() {
     while(!data_available());
-    return read_reg(1);
+    return read_reg(REG_RXDATA);
 }
 
 char recv_char_unblocking() {
-    return read_reg(1);
+    return read_reg(REG_RXDATA);
 }
 
 void setup() {
