@@ -182,15 +182,17 @@ void write_reg(uint8_t addr, uint8_t data) {
 
     set_nwe(LOW);
 
+    set_ncs(LOW);
     set_data_dir(OUTPUT);
     set_data(data);
 
-    set_ncs(LOW);
     delayMicroseconds(1);
-    set_ncs(HIGH);
+    set_phi2(HIGH);
     delayMicroseconds(1);
+    set_phi2(LOW);
 
     set_data_dir(INPUT);
+    set_ncs(HIGH);
     set_nwe(HIGH);
 
 }
@@ -205,9 +207,12 @@ uint8_t read_reg(uint8_t addr) {
     //set_data_dir(INPUT);
 
     set_ncs(LOW);
-    delayMicroseconds(1);
 
+    set_phi2(HIGH);
+    delayMicroseconds(1);
     uint8_t data = get_data();
+    set_phi2(LOW);
+
     set_ncs(HIGH);
 
     return data;
