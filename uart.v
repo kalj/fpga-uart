@@ -2,6 +2,8 @@
 
 `include "edge_trig.v"
 
+// `include "sim-primitives.v"
+
 module BaudGenInternal(input clk, output baud, input half_reset);
    // define a counter to divide the clock down from 16MHz
 
