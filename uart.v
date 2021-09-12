@@ -145,7 +145,6 @@ module Uart(input       clk,
    wire writing = (!ncs & !nwe & nrst); // input if selected and writing and not resetting
 
    reg [7:0] data_oe = 0;
-
    reg [7:0] data_out = 0;
    wire [7:0] data_in;
 
@@ -172,11 +171,11 @@ module Uart(input       clk,
    RisingEdgeTrig U1(.clk(clk), .out(write_trig), .in(writing));
 
    wire                    tx_busy;
-   UartTx     U2(.clk(clk), .baud_edge(tx_baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
+   UartTx     Utx(.clk(clk), .baud_edge(tx_baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
 
    wire                     new_rx_data_ready;
    wire [7:0]               new_rx_data;
-   UartRx     U3(.clk(clk), .rx(rx), .data(new_rx_data), .baud_edge(rx_baud_edge), .data_ready(new_rx_data_ready));
+   UartRx     Urx(.clk(clk), .baud_edge(rx_baud_edge), .rx(rx), .data(new_rx_data), .data_ready(new_rx_data_ready));
 
    reg                      rx_available;
    reg [7:0]                rx_data;
