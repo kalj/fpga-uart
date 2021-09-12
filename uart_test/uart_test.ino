@@ -56,14 +56,14 @@ void set_data_dir(int dir) {
 #if defined(ARDUINO_PORT_VERSION)
 
 #define NRST_PIN   A2
-#define PHI2_PIN    A3
+#define PHI2_PIN   A3
 #define NCS_PIN    A4
 #define NWE_PIN    A5
 
 const uint8_t addr_pins[] = {A0, A1};
 
 #define NRST_BIT   2
-#define PHI2_BIT    3
+#define PHI2_BIT   3
 #define NCS_BIT    4
 #define NWE_BIT    5
 
@@ -127,7 +127,7 @@ void set_data_dir(int dir) {
 #if defined(TEENSY_VERSION)
 
 #define NRST_PIN   9
-#define PHI2_PIN    10
+#define PHI2_PIN   10
 #define NCS_PIN    11
 #define NWE_PIN    12
 
