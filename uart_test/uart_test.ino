@@ -1,5 +1,5 @@
 /* #define ARDUINO_BASIC_VERSION */
-#define ARDUINO_PORT_VERSION
+#define ARDUINO_MEGA_VERSION
 /* #define TEENSY_VERSION */
 
 #if defined(ARDUINO_BASIC_VERSION)
@@ -53,7 +53,7 @@ void set_data_dir(int dir) {
 }
 #endif
 
-#if defined(ARDUINO_PORT_VERSION)
+#if defined(ARDUINO_MEGA_VERSION)
 
 #define NRST_PIN   A2
 #define PHI2_PIN   A3
@@ -67,59 +67,71 @@ const uint8_t addr_pins[] = {A0, A1};
 #define NCS_BIT    4
 #define NWE_BIT    5
 
-
 static inline void set_nwe(int lvl) {
-    if(lvl==HIGH) {
-        PORTC |= (1<<NWE_BIT);
-    } else {
-        PORTC &= ~(1<<NWE_BIT);
-    }
+    digitalWrite(NWE_PIN, lvl);
 }
 
 static inline void set_ncs(int lvl) {
-    if(lvl==HIGH) {
-        PORTC |= (1<<NCS_BIT);
-    } else {
-        PORTC &= ~(1<<NCS_BIT);
-    }
+    digitalWrite(NCS_PIN, lvl);
 }
 
 static inline void set_nrst(int lvl) {
-    if(lvl==HIGH) {
-        PORTC |= (1<<NRST_BIT);
-    } else {
-        PORTC &= ~(1<<NRST_BIT);
-    }
+    digitalWrite(NRST_PIN, lvl);
 }
 
 static inline void set_phi2(int lvl) {
-    if(lvl==HIGH) {
-        PORTC |= (1<<PHI2_BIT);
-    } else {
-        PORTC &= ~(1<<PHI2_BIT);
-    }
+    digitalWrite(PHI2_PIN, lvl);
 }
 
+/* static inline void set_nwe(int lvl) { */
+/*     if(lvl==HIGH) { */
+/*         PORTF |= (1<<NWE_BIT); */
+/*     } else { */
+/*         PORTF &= ~(1<<NWE_BIT); */
+/*     } */
+/* } */
+
+/* static inline void set_ncs(int lvl) { */
+/*     if(lvl==HIGH) { */
+/*         PORTF |= (1<<NCS_BIT); */
+/*     } else { */
+/*         PORTF &= ~(1<<NCS_BIT); */
+/*     } */
+/* } */
+
+/* static inline void set_nrst(int lvl) { */
+/*     if(lvl==HIGH) { */
+/*         PORTF |= (1<<NRST_BIT); */
+/*     } else { */
+/*         PORTF &= ~(1<<NRST_BIT); */
+/*     } */
+/* } */
+
+/* static inline void set_phi2(int lvl) { */
+/*     if(lvl==HIGH) { */
+/*         PORTF |= (1<<PHI2_BIT); */
+/*     } else { */
+/*         PORTF &= ~(1<<PHI2_BIT); */
+/*     } */
+/* } */
+
 void set_address(uint8_t addr) {
-    PORTC = (PORTC&(~B00000011)) | (addr&0x11);
+    PORTF = (PORTF&B11111100) | (addr&0x11);
 }
 
 void set_data(uint8_t data) {
-    PORTB = (PORTB & B11111100) | ((data>>6)&B00000011);
-    PORTD = (PORTD & B00000011) | ((data<<2)&B11111100);
+    PORTK = data;
 }
 
 uint8_t get_data() {
-    return ((PINB&0x3)<<6)|((PIND&0xfc) >> 2);
+    return PINK;
 }
 
 void set_data_dir(int dir) {
     if(dir==OUTPUT) {
-        DDRB = DDRB | B00000011; // pins 8-9 as output
-        DDRD = DDRD | B11111100; // pins 2-7 as output
+        DDRK = B11111111;
     } else {
-        DDRB = DDRB & B11111100; // pins 8-9 as input
-        DDRD = DDRD & B00000011; // pins 2-7 as input
+        DDRK = B00000000;
     }
 }
 #endif
