@@ -163,6 +163,27 @@ module Uart(input       clk,
         data_oe <= 0;
    end
 
+   //----------------------------------------------------------------
+   // handle phi2 edges
+   //----------------------------------------------------------------
+   reg [2:0]                phi2_dl;
+
+   always @(posedge clk) begin
+      phi2_dl <= {phi2_dl[1:0], phi2};
+   end
+
+   // maximum one cycle after actual pos edge (62.5ns)
+   wire phi2_posedge = phi2_dl[0] && !phi2_dl[1];
+   wire phi2_negedge = !phi2_dl[0] && phi2_dl[1];
+
+   // one cycle later (62.5ns)
+   wire phi2_posedge_p1 = phi2_dl[1] && !phi2_dl[2];
+   wire phi2_negedge_p1 = !phi2_dl[1] && phi2_dl[2];
+
+   //----------------------------------------------------------------
+   // main bus/register logic
+   //----------------------------------------------------------------
+
    reg                    write_trig;
    wire                    tx_busy;
    UartTx     Utx(.clk(clk), .baud_edge(tx_baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
@@ -173,26 +194,6 @@ module Uart(input       clk,
 
    reg                      rx_available;
    reg [7:0]                rx_data;
-
-   // handle phi2 edges
-   reg                      phi2_prev;
-   reg                      phi2_posedge;
-   reg                      phi2_posedge_p1;
-   reg                      phi2_negedge;
-   reg                      phi2_negedge_p1;
-
-   always @(posedge clk) begin
-
-      // TODO testa delay line
-      phi2_prev <= phi2;
-      // maximum one cycle after actual pos edge (62.5ns)
-      phi2_posedge <= phi2 && !phi2_prev;
-      phi2_negedge <= !phi2 && phi2_prev;
-      // one cycle later (62.5ns)
-      phi2_posedge_p1 <= phi2_posedge;
-      phi2_negedge_p1 <= phi2_negedge;
-   end
-
 
    always @(posedge clk) begin
 
