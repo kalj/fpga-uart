@@ -141,9 +141,6 @@ module Uart(input       clk,
             input       ncs, input nrst,
             inout [7:0] data);
 
-   wire reading = (!ncs & nwe & nrst); // output if selected and not writing and not resetting
-   wire writing = (!ncs & !nwe & nrst); // input if selected and writing and not resetting
-
    reg [7:0] data_oe = 0;
    reg [7:0] data_out = 0;
    wire [7:0] data_in;
@@ -158,18 +155,15 @@ module Uart(input       clk,
        .D_IN_0(data_in)
    );
 
+   // set output enabled
    always @(posedge clk) begin
-      if (reading) begin
-         data_oe <= ~0; // all ones
-      end
-      else begin
-         data_oe <= 0;
-      end
+      if(!ncs && nwe)
+        data_oe <= ~0; // all ones
+      else
+        data_oe <= 0;
    end
 
-   wire                    write_trig;
-   RisingEdgeTrig U1(.clk(clk), .out(write_trig), .in(writing));
-
+   reg                    write_trig;
    wire                    tx_busy;
    UartTx     Utx(.clk(clk), .baud_edge(tx_baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
 
@@ -180,32 +174,56 @@ module Uart(input       clk,
    reg                      rx_available;
    reg [7:0]                rx_data;
 
-   wire                     reading_start;
-   wire                     reading_end;
-   RisingEdgeTrig U4(.clk(clk), .out(reading_start), .in(reading));
-   FallingEdgeTrig U5(.clk(clk), .out(reading_end),   .in(reading));
+   // handle phi2 edges
+   reg                      phi2_prev;
+   reg                      phi2_posedge;
+   reg                      phi2_posedge_p1;
+   reg                      phi2_negedge;
+   reg                      phi2_negedge_p1;
 
    always @(posedge clk) begin
 
+      // TODO testa delay line
+      phi2_prev <= phi2;
+      // maximum one cycle after actual pos edge (62.5ns)
+      phi2_posedge <= phi2 && !phi2_prev;
+      phi2_negedge <= !phi2 && phi2_prev;
+      // one cycle later (62.5ns)
+      phi2_posedge_p1 <= phi2_posedge;
+      phi2_negedge_p1 <= phi2_negedge;
+   end
+
+
+   always @(posedge clk) begin
+
+      // handle newly received rx data byte
       if (new_rx_data_ready) begin
          rx_data      <= new_rx_data;
          rx_available <= 1;
       end
 
-      if (reading_start) begin
-         if (addr==2'b00) begin
+      // write trigger
+      // 25ns after pos edge, data has stabilized
+      if(!ncs && !nwe && !tx_busy && phi2_posedge_p1 )
+        write_trig <= 1;
+      else
+        write_trig <= 0;
+
+      // start of read cycle
+      if(!ncs && nwe && phi2_posedge) begin
+         if (addr == 2'b00)  begin
             // status
             data_out <= { 6'b0, rx_available, tx_busy };
-         end
-
-         if (addr==2'b01 && rx_available) begin
+         end else if(addr == 2'b01 && rx_available) begin
             // rx data
             data_out     <= rx_data;
             rx_available <= 0;
-         end
+         end else
+           data_out     <= 0;
       end
 
-      if (reading_end) begin
+      // end of read cycle
+      if(phi2_negedge_p1) begin
          data_out <= 0;
       end
    end
