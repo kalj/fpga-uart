@@ -23,6 +23,10 @@ static inline void set_nrst(int lvl) {
     digitalWrite(NRST_PIN, lvl);
 }
 
+static inline void set_phi2(int lvl) {
+    digitalWrite(PHI2_PIN, lvl);
+}
+
 void set_address(uint8_t addr) {
     digitalWrite(addr_pins[0], addr&0x1);
     digitalWrite(addr_pins[1], (addr>>1)&0x1);
@@ -88,6 +92,14 @@ static inline void set_nrst(int lvl) {
     }
 }
 
+static inline void set_phi2(int lvl) {
+    if(lvl==HIGH) {
+        PORTC |= (1<<PHI2_BIT);
+    } else {
+        PORTC &= ~(1<<PHI2_BIT);
+    }
+}
+
 void set_address(uint8_t addr) {
     PORTC = (PORTC&(~B00000011)) | (addr&0x11);
 }
@@ -132,6 +144,10 @@ static inline void set_ncs(int lvl) {
 
 static inline void set_nrst(int lvl) {
     digitalWrite(NRST_PIN, lvl);
+}
+
+static inline void set_phi2(int lvl) {
+    digitalWrite(PHI2_PIN, lvl);
 }
 
 void set_address(uint8_t addr) {
@@ -233,6 +249,9 @@ void setup() {
 
     pinMode(NWE_PIN, OUTPUT);
     set_nwe(HIGH);
+
+    pinMode(PHI2_PIN, OUTPUT);
+    set_phi2(LOW);
 
     for(int i=0; i<2; i++) {
         pinMode(addr_pins[i], OUTPUT);
