@@ -188,12 +188,12 @@ module Uart(input       clk,
    wire [7:0]               tx_fifo_out;
    wire                     tx_fifo_full;
    wire                     tx_fifo_empty;
-   wire                     tx_fifo_read_active;
+   reg                      tx_send_next;
    reg                      write_trig;
    Fifo #(.N_SLOTS(8)
           ) Utx_fifo (.clk(clk),
                       .write_trig(write_trig),
-                      .read_active(tx_fifo_read_active),
+                      .read_trig(tx_send_next),
                       .reset(!nrst),
                       .in(data_in),
                       .out(tx_fifo_out),
@@ -201,17 +201,17 @@ module Uart(input       clk,
                       .empty(tx_fifo_empty));
 
    wire                   tx_busy;
-   wire                   tx_latch_data;
-   UartTx     Utx(.clk(clk), .baud_edge(tx_baud_edge), .tx(tx), .data(tx_fifo_out), .latch_data(tx_latch_data), .busy(tx_busy));
+   reg                    tx_latch_data;
+   UartTx     Utx(.clk(clk), .baud_edge(tx_baud_edge), .tx(tx), .data(tx_fifo_out), .latch_data(tx_send_next), .busy(tx_busy));
 
-   reg [1:0]              ready_to_send_next_dl;
-   always @(posedge clk)
-     ready_to_send_next_dl <= {ready_to_send_next_dl[0], !tx_busy && !tx_fifo_empty};
+   reg [1:0]                   ready_to_send_next_dl;
+   always @(posedge clk) begin
+      ready_to_send_next_dl <= {ready_to_send_next_dl[0], !tx_busy && !tx_fifo_empty};
 
-   // tx fifo is outputting for two cycles
-   assign tx_fifo_read_active = ready_to_send_next_dl[0] || ready_to_send_next_dl[1];
-   // latch into uart tx during second cycle
-   assign tx_latch_data = ready_to_send_next_dl[1];
+      tx_send_next <= 0;
+      if(ready_to_send_next_dl[0] && !ready_to_send_next_dl[1])
+        tx_send_next <= 1;
+   end
 
    //----------------------------------------------------------------
    // rx fifo and shift register
