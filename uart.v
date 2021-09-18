@@ -214,16 +214,26 @@ module Uart(input       clk,
    assign tx_latch_data = ready_to_send_next_dl[1];
 
    //----------------------------------------------------------------
-   // rx
+   // rx fifo and shift register
    //----------------------------------------------------------------
 
    wire                   new_rx_data_ready;
    wire [7:0]             new_rx_data;
    UartRx     Urx(.clk(clk), .baud_edge(rx_baud_edge), .rx(rx), .data(new_rx_data), .data_ready(new_rx_data_ready));
 
-
-   reg                    rx_available;
-   reg [7:0]              rx_data;
+   wire [7:0]               rx_fifo_out;
+   wire                     rx_fifo_full;
+   wire                     rx_fifo_empty;
+   wire                     rx_fifo_write = new_rx_data_ready;
+   reg                      rx_fifo_read_trig;
+   Fifo Urx_fifo(.clk(clk),
+                 .write_trig(rx_fifo_write),
+                 .read_trig(rx_fifo_read_trig),
+                 .reset(!nrst),
+                 .in(new_rx_data),
+                 .out(rx_fifo_out),
+                 .full(rx_fifo_full),
+                 .empty(rx_fifo_empty));
 
    //----------------------------------------------------------------
    // main bus/register logic
@@ -233,13 +243,9 @@ module Uart(input       clk,
 
    always @(posedge clk) begin
 
+      // default values
+      rx_fifo_read_trig <= 0;
       write_trig <= 0;
-
-      // handle newly received rx data byte
-      if (new_rx_data_ready) begin
-         rx_data <= new_rx_data;
-         rx_available <= 1;
-      end
 
       // write trigger
       // 25ns after pos edge, data has stabilized
@@ -250,11 +256,11 @@ module Uart(input       clk,
       if(!ncs && nwe && phi2_posedge) begin
          if (addr == 2'b00)  begin
             // status
-            data_out <= { 6'b0, !rx_available, tx_fifo_full };
-         end else if(addr == 2'b01 && rx_available) begin
+            data_out <= { 6'b0, rx_fifo_empty, tx_fifo_full };
+         end else if(addr == 2'b01 && !rx_fifo_empty) begin
             // rx data
-            data_out     <= rx_data;
-            rx_available <= 0;
+            data_out     <= rx_fifo_out;
+            rx_fifo_read_trig <= 1;
          end else
            data_out     <= 0;
       end
