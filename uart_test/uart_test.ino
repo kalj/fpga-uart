@@ -116,7 +116,7 @@ static inline void set_phi2(int lvl) {
 /* } */
 
 void set_address(uint8_t addr) {
-    PORTF = (PORTF&B11111100) | (addr&0x11);
+    PORTF = (PORTF&B11111100) | (addr&B11);
 }
 
 void set_data(uint8_t data) {
@@ -232,18 +232,18 @@ uint8_t read_reg(uint8_t addr) {
 
 #define REG_STATUS 0x0
 #define REG_RXDATA 0x1
-#define REG_TXDATA 0x0
+#define REG_TXDATA 0x2
 
-#define STATUS_BIT_BUSY 0x1
-#define STATUS_BIT_RX_AVAIL 0x2
+#define STATUS_BIT_TX_FULL 0x1
+#define STATUS_BIT_RX_EMPTY 0x2
 
 void send_char(char ch) {
-    while(read_reg(REG_STATUS) & STATUS_BIT_BUSY);
+    while(read_reg(REG_STATUS) & STATUS_BIT_TX_FULL);
     write_reg(REG_TXDATA, ch);
 }
 
 bool data_available() {
-    return (read_reg(REG_STATUS) & STATUS_BIT_RX_AVAIL) == STATUS_BIT_RX_AVAIL;
+    return !(read_reg(REG_STATUS) & STATUS_BIT_RX_EMPTY);
 }
 
 char recv_char_blocking() {
@@ -277,7 +277,6 @@ void setup() {
 
     delay(100);
     Serial.begin(115200);
-
 }
 
 #define BUFSIZE 80
