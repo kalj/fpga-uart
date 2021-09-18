@@ -1,13 +1,13 @@
-module Fifo(input        clk,
-            input        write_trig,
-            input        read_active,
-            input        reset,
-            input [7:0]  in,
-            output [7:0] out,
-            output       full,
-            output       empty);
+module Fifo #(parameter N_SLOTS = 8)
+   (input        clk,
+    input        write_trig,
+    input        read_active,
+    input        reset,
+    input [7:0]  in,
+    output [7:0] out,
+    output       full,
+    output       empty);
 
-   localparam N_SLOTS = 8;
    localparam SLOT_BITS = $clog2(N_SLOTS);
 
    reg [7:0]                       memory [(N_SLOTS-1):0];
