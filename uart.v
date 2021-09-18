@@ -182,40 +182,75 @@ module Uart(input       clk,
    wire phi2_negedge_p1 = !phi2_dl[1] && phi2_dl[2];
 
    //----------------------------------------------------------------
+   // tx fifo and shift register
+   //----------------------------------------------------------------
+
+   wire [7:0]               tx_fifo_out;
+   wire                     tx_fifo_full;
+   wire                     tx_fifo_empty;
+   wire                     tx_fifo_read_active;
+   reg                      write_trig;
+   Fifo #(.N_SLOTS(8)
+          ) Utx_fifo (.clk(clk),
+                      .write_trig(write_trig),
+                      .read_active(tx_fifo_read_active),
+                      .reset(!nrst),
+                      .in(data_in),
+                      .out(tx_fifo_out),
+                      .full(tx_fifo_full),
+                      .empty(tx_fifo_empty));
+
+   wire                   tx_busy;
+   wire                   tx_latch_data;
+   UartTx     Utx(.clk(clk), .baud_edge(tx_baud_edge), .tx(tx), .data(tx_fifo_out), .latch_data(tx_latch_data), .busy(tx_busy));
+
+   reg [1:0]              ready_to_send_next_dl;
+   always @(posedge clk)
+     ready_to_send_next_dl <= {ready_to_send_next_dl[0], !tx_busy && !tx_fifo_empty};
+
+   // tx fifo is outputting for two cycles
+   assign tx_fifo_read_active = ready_to_send_next_dl[0] || ready_to_send_next_dl[1];
+   // latch into uart tx during second cycle
+   assign tx_latch_data = ready_to_send_next_dl[1];
+
+   //----------------------------------------------------------------
+   // rx
+   //----------------------------------------------------------------
+
+   wire                   new_rx_data_ready;
+   wire [7:0]             new_rx_data;
+   UartRx     Urx(.clk(clk), .baud_edge(rx_baud_edge), .rx(rx), .data(new_rx_data), .data_ready(new_rx_data_ready));
+
+
+   reg                    rx_available;
+   reg [7:0]              rx_data;
+
+   //----------------------------------------------------------------
    // main bus/register logic
    //----------------------------------------------------------------
 
-   reg                    write_trig;
-   wire                    tx_busy;
-   UartTx     Utx(.clk(clk), .baud_edge(tx_baud_edge), .tx(tx), .data(data_in), .latch_data(write_trig), .busy(tx_busy));
-
-   wire                     new_rx_data_ready;
-   wire [7:0]               new_rx_data;
-   UartRx     Urx(.clk(clk), .baud_edge(rx_baud_edge), .rx(rx), .data(new_rx_data), .data_ready(new_rx_data_ready));
-
-   reg                      rx_available;
    reg [7:0]                rx_data;
 
    always @(posedge clk) begin
 
+      write_trig <= 0;
+
       // handle newly received rx data byte
       if (new_rx_data_ready) begin
-         rx_data      <= new_rx_data;
+         rx_data <= new_rx_data;
          rx_available <= 1;
       end
 
       // write trigger
       // 25ns after pos edge, data has stabilized
-      if(!ncs && !nwe && !tx_busy && phi2_posedge_p1 )
+      if(!ncs && !nwe && phi2_posedge_p1 && addr == 2'b10)
         write_trig <= 1;
-      else
-        write_trig <= 0;
 
       // start of read cycle
       if(!ncs && nwe && phi2_posedge) begin
          if (addr == 2'b00)  begin
             // status
-            data_out <= { 6'b0, rx_available, tx_busy };
+            data_out <= { 6'b0, !rx_available, tx_fifo_full };
          end else if(addr == 2'b01 && rx_available) begin
             // rx data
             data_out     <= rx_data;
