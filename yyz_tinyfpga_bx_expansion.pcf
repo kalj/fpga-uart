@@ -1,0 +1,98 @@
+###############################################################################
+#
+# TinyFPGA BX constraint file (.pcf)
+#
+###############################################################################
+#
+# Copyright (c) 2018, Luke Valenty
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the <project name> project.
+#
+###############################################################################
+
+####
+# TinyFPGA BX information: https://github.com/tinyfpga/TinyFPGA-BX/
+####
+
+# Left side of board
+set_io --warn-no-port PIN_D0    A2  # PIN_1
+set_io --warn-no-port PIN_D2    A1  # PIN_2
+set_io --warn-no-port PIN_D4    B1  # PIN_3
+set_io --warn-no-port PIN_D6    C2  # PIN_4
+set_io --warn-no-port PIN_INTB  C1  # PIN_5
+set_io --warn-no-port PIN_RWB   D2  # PIN_6
+set_io --warn-no-port PIN_CSB   D1  # PIN_7
+set_io --warn-no-port PIN_PHI2  E2  # PIN_8
+set_io --warn-no-port PIN_RSTB  E1  # PIN_9
+
+set_io --warn-no-port PIN_A0_P8 G2 # PIN_10
+set_io --warn-no-port PIN_A1_P7 H1 # PIN_11
+set_io --warn-no-port PIN_A2_P6 J1 # PIN_12
+set_io --warn-no-port PIN_A3_P5 H2 # PIN_13
+
+# Right side of board
+set_io --warn-no-port PIN_P11 H9 # PIN_14
+set_io --warn-no-port PIN_P10 D9 # PIN_15
+set_io --warn-no-port PIN_P9  D8 # PIN_16
+
+set_io --warn-no-port PIN_A7_P1 C9 # PIN_17
+set_io --warn-no-port PIN_A6_P2 A9 # PIN_18
+set_io --warn-no-port PIN_A5_P3 B8 # PIN_19
+set_io --warn-no-port PIN_A4_P4 A8 # PIN_20
+
+set_io --warn-no-port PIN_D7 B7 # PIN_21
+set_io --warn-no-port PIN_D5 A7 # PIN_22
+set_io --warn-no-port PIN_D3 B6 # PIN_23
+set_io --warn-no-port PIN_D1 A6 # PIN_24
+
+# General purpose pins on bottom of board
+set_io --warn-no-port PIN_P12 G1 # PIN_25
+set_io --warn-no-port PIN_P13 J3 # PIN_26
+set_io --warn-no-port PIN_P14 J4 # PIN_27
+set_io --warn-no-port PIN_P18 G9 # PIN_28
+set_io --warn-no-port PIN_P17 J9 # PIN_29
+set_io --warn-no-port PIN_P16 E8 # PIN_30
+set_io --warn-no-port PIN_P15 J2 # PIN_31
+
+
+# SPI flash interface on bottom of board
+set_io --warn-no-port SPI_SS F7
+set_io --warn-no-port SPI_SCK G7
+set_io --warn-no-port SPI_IO0 G6
+set_io --warn-no-port SPI_IO1 H7
+set_io --warn-no-port SPI_IO2 H4
+set_io --warn-no-port SPI_IO3 J8
+
+# LED
+set_io --warn-no-port LED B3
+
+# USB
+set_io --warn-no-port USBP B4
+set_io --warn-no-port USBN A4
+set_io --warn-no-port USBPU A3
+
+# 16MHz clock
+set_io --warn-no-port CLK B2 # input

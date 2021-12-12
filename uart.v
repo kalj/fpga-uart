@@ -275,22 +275,22 @@ endmodule
 
 module Top(input CLK,
            // tx & rx
-           output PIN_23, input PIN_22,
+           output PIN_P9, input PIN_P10,
            // addr0, addr1,
-           input  PIN_14, input PIN_15,
+           input  PIN_A0_P8, input PIN_A1_P7,
            // ~rst, phi2, ~cs, ~we
-           input  PIN_16, input PIN_17, input PIN_18, input PIN_19,
+           input  PIN_RSTB, input PIN_PHI2, input PIN_CSB, input PIN_RWB,
            // debug
            // output PIN_20, output PIN_21,
            // data bus
-           inout  PIN_6, inout PIN_7, inout PIN_8, inout PIN_9, inout PIN_10, inout PIN_11, inout PIN_12, inout PIN_13);
+           inout  PIN_D0, inout PIN_D1, inout PIN_D2, inout PIN_D3, inout PIN_D4, inout PIN_D5, inout PIN_D6, inout PIN_D7);
 
-   wire [7:0]    data_bus = {PIN_13, PIN_12, PIN_11, PIN_10, PIN_9, PIN_8, PIN_7, PIN_6};
-   wire [1:0]    addr = {PIN_15, PIN_14};
+   wire [7:0]    data_bus = {PIN_D7, PIN_D6, PIN_D5, PIN_D4, PIN_D3, PIN_D2, PIN_D1, PIN_D0};
+   wire [1:0]    addr = {PIN_A1_P7, PIN_A0_P8};
 
    Uart U1(.clk(CLK),
-           .tx(PIN_23), .rx(PIN_22),
+           .tx(PIN_P9), .rx(PIN_P10),
            .addr(addr),
-           .nrst(PIN_16), .phi2(PIN_17), .ncs(PIN_18), .nwe(PIN_19),
+           .nrst(PIN_RSTB), .phi2(PIN_PHI2), .ncs(PIN_CSB), .nwe(PIN_RWB),
            .data(data_bus));
 endmodule

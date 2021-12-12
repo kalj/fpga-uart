@@ -22,7 +22,8 @@ PROJ = uart
 # PACKAGE = tq144
 
 # tiny fpga bx
-PIN_DEF = tiny_fpga_bx.pcf
+# PIN_DEF = tiny_fpga_bx.pcf
+PIN_DEF = yyz_tinyfpga_bx_expansion.pcf
 DEVICE = lp8k
 PACKAGE = cm81
 
